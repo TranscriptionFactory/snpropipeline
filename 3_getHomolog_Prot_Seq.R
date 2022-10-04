@@ -9,13 +9,13 @@ ensembl = useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
 #load ensembl annotations
 setwd("/ix/djishnu/Aaron/data")
 
-data = readRDS("/ix/djishnu/Aaron/data/output/mapped_snp_to_protein.RDS") %>% drop_na()
+data = readRDS("/ix/djishnu/Aaron/data/output_data/mapped_snp_to_protein.RDS") %>% drop_na()
 
 names(data)[which(names(data) == "start")] = "tx_start"
 names(data)[which(names(data) == "end")] = "tx_end"
 
 # joining cds with tx coordinates for mapping
-cds_pos = readRDS("/ix/djishnu/Aaron/data/output/cds_pos_from_transcript.RDS") %>% as.data.frame() %>% distinct()
+cds_pos = readRDS("/ix/djishnu/Aaron/data/output_data/cds_pos_from_transcript.RDS") %>% as.data.frame() %>% distinct()
 names(cds_pos)[1:2] = c("cds_start", "cds_end")
 
 data = (data %>% dplyr::select(-width)) %>% left_join(cds_pos, by = c("ensembl_transcript_id" = "names",
@@ -48,8 +48,9 @@ substitute_base = function(rw){
 # the index, mut_txs, mut_prots all have the same order, so I just used
 # this index df to hold the additional data (gene id,..) because the biostring
 # objects are weird
-index = data %>% dplyr::select(coding, cds_start, ref, var, 
-                               ensembl_protein_id, peptide, gene_id, ensembl_transcript_id)
+index = data %>% dplyr::select(coding, cds_start, residue_start, ref, var, 
+                               ensembl_protein_id, peptide, gene_id, ensembl_transcript_id,
+                               chr, coord)
 
 mut_txs = sapply(index$coding, Biostrings::DNAString)
 mut_prots = sapply(index$peptide, Biostrings::AAString)
@@ -85,7 +86,9 @@ mut_prots_df = data.frame(mut_prots_AAset@ranges)
 
 mut_prots_df$peptide = unlist(lapply(mut_prots_AAset, Biostrings::toString))
 mut_prots_df$tx_id = index$ensembl_transcript_id
-
+mut_prots_df$chr = index$chr
+mut_prots_df$coord = index$coord
+mut_prots_df$res_no = index$residue_start
 # remove asterisk again after translating
 mut_prots_df = separate(mut_prots_df, col = "peptide", sep = "\\*", into = c("peptide", "asterisk")) %>% dplyr::select(-asterisk)
 # saveRDS(mut_prots_df, "/ix/djishnu/Aaron/data/output/mutant_protein_sequences.RDS")
@@ -96,13 +99,15 @@ for(i in 1:length(protein_names)) {
   same_protein = mut_prots_df %>% dplyr::filter(names == protein_names[i])
   
   # write these to folder
-  protein_dir = paste0("/ix/djishnu/Aaron/data/output/fastas_by_protein/", protein_names[i])
+  protein_dir = paste0("/ix/djishnu/Aaron/data/fastas_clustal/protein_fastas/", protein_names[i])
   
   if(!file.exists(protein_dir)){
     dir.create(protein_dir)
   }
   protein_string_set = AAStringSet(same_protein$peptide)
-  names(protein_string_set) = paste0(same_protein$names, "_", same_protein$tx_id)
+  names(protein_string_set) = paste0(same_protein$names, "_", same_protein$tx_id, "_", 
+                                     same_protein$chr, "_", same_protein$coord, "_",
+                                     i)
   
   # write mutated seqs with name ENS_protein#_ENS_transcript#
   writeXStringSet(protein_string_set, paste0(protein_dir, "/", protein_names[i],".fasta"), format = "fasta")
