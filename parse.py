@@ -1,9 +1,16 @@
 import os, sys
 import re
+import argparse
+
+parser = argparse.ArgumentParser(description='Parse SAM files into FASTA')
+parser.add_argument("--blast",required=True,help="SAM file from BLAST")
+parser.add_argument("--path",required=True,help="Path to save FASTA files (separated by gene id)")
+
+args = parser.parse_args()
 
 key_files = []
 
-with open('swissprot_psiblast.sam') as fil:
+with open(str(args.blast)) as fil:
    lines = fil.readlines()
 
    for index in range(0, len(lines)):
@@ -21,7 +28,7 @@ with open('swissprot_psiblast.sam') as fil:
          # the entire sequence is in this index
          sequence = cur_line[9]
 
-         target_dir = os.getcwd() + "/protein_fastas/" + key
+         target_dir = str(args.path) + key
          if(not os.path.exists(target_dir)):
             os.mkdir(target_dir)
 

@@ -10,4 +10,4 @@ output_folder_files = list.files(output_folder)
 # try with first one
 f = read.fasta(paste0(output_folder, output_folder_files[1]))
 
-entropy(f)
+e =entropy(f)

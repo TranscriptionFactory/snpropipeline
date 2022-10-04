@@ -20,6 +20,7 @@ library(biomaRt)
 library(ensembldb)
 library(EnsDb.Hsapiens.v86)
 library(GenomicFeatures)
+
 ensembl = useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
 
 # load ppi SNPs
@@ -54,7 +55,7 @@ convertExonsToGenes_Parallel = function(ppi_input_row) {
   return(ppi_input_row)
 }
 
-# Get overlapping transcripts (in parallel) - returns ~40k results
+# (dont use) Get overlapping transcripts (in parallel) - returns ~40k results
 getTranscripts_from_SNPs_Parallel = function(ppi_input_row) {
   # Function to map SNP to exons by using GRanges.
   # GRanges will find transcripts  that overlap with the SNP (only want protein coding) and will return them
@@ -68,9 +69,6 @@ getTranscripts_from_SNPs_Parallel = function(ppi_input_row) {
                                 columns = c("gene_id", "entrezid", "gene_name"))
   
   genes_found = tx_found@elementMetadata
-  
-  # genes_found$strand = tx_found@strand@values
-  
   ppi_input_row = cbind(ppi_input_row, genes_found)
   
   return(ppi_input_row)
@@ -79,7 +77,7 @@ getTranscripts_from_SNPs_Parallel = function(ppi_input_row) {
 # prepare workers for parallel computing
 # each core needs a copy of all of the libraries and the EnsDb
 # (every core starts with a blank R environment so we need to initialize
-# each environment and export any variables we want accsessed)
+# each environment and export any variables we want accessed)
 clusterExport(p.cluster, c("ppi_input"), envir = environment())
 clusterEvalQ(p.cluster, library("ensembldb"))
 clusterEvalQ(p.cluster, library("tidyverse"))
@@ -87,15 +85,14 @@ clusterEvalQ(p.cluster, library("biomaRt"))
 clusterEvalQ(p.cluster, library("EnsDb.Hsapiens.v86"))
 clusterEvalQ(p.cluster, library("GenomicFeatures"))
 
-# start cluster (pass EnsDb again here...I think you need both the clusterEvalQ above
-# (for the parallel computing)
-# the .packages calls are for the EnsDb object (this is for the foreach package to work))
+# start cluster (pass EnsDb again here...clusterEvalQ calls prepare the individual
+# cores and the above
+# the .packages calls are for the forreach package
 results = foreach(i = 1:nrow(ppi_input),
                                .combine = rbind,
                                .packages = c("ensembldb", "EnsDb.Hsapiens.v86", "GenomicFeatures")) %dopar% {
 
                                  convertExonsToGenes_Parallel(ppi_input[i,])
-                                 # getTranscripts_from_SNPs_Parallel(ppi_input[i,])
                                }
 
 parallel::stopCluster(p.cluster)
@@ -111,7 +108,6 @@ results.distinct = distinct(results.distinct)
 unique_genes = data.frame(unique(results.distinct$gene_name))
 
 # write results
-write_tsv(unique_genes, file = paste0(getwd(), "/data/gene_list.tsv"))
-
-write_tsv(results, file = paste0(getwd(), "/data/gene_annotations_full.tsv"))
+# write_tsv(unique_genes, file = paste0(getwd(), "/data/gene_list.tsv"))
+# write_tsv(results, file = paste0(getwd(), "/data/gene_annotations_full.tsv"))
 

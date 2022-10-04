@@ -20,6 +20,6 @@ source activate clustal_env
 file_dir=/ix/djishnu/Aaron/data/fastas_clustal/protein_fastas
 
 for file in ${file_dir}/*; do
-clustalo -i ${file}/clustal_in.fasta --dealign -o ${file}_clustal_output --full --iterations=5;
+clustalo -i ${file}/clustal_in.fasta --dealign -o ${file}_100ITER_clustal_output --full --iterations=100;
 done
     
