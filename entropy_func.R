@@ -14,7 +14,7 @@
     composition <- table(alignment)
     unk <- composition[!names( composition  ) %in% aa]
     if(length(unk) > 0) {
-      warning(paste("non standard residue code:",names(unk),"mapped to X\n  "))
+      #warning(paste("non standard residue code:",names(unk),"mapped to X\n  "))
       for(i in 1:length(unk))
         alignment[alignment==names(unk[i])]="X"
     }

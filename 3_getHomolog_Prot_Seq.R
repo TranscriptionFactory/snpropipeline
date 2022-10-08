@@ -52,6 +52,7 @@ index = data %>% dplyr::select(coding, cds_start, residue_start, ref, var,
                                ensembl_protein_id, peptide, gene_id, ensembl_transcript_id,
                                chr, coord)
 
+# saveRDS(index, "/ix/djishnu/Aaron/data/output_data/mutant_sequence_index.RDS")
 mut_txs = sapply(index$coding, Biostrings::DNAString)
 mut_prots = sapply(index$peptide, Biostrings::AAString)
 
